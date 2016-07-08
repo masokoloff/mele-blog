@@ -5,10 +5,11 @@ from django.db.models import Count
 from django.views.generic import ListView
 from django.views.generic import DetailView
 
+from haystack.query import SearchQuerySet
 from taggit.models import Tag
 
 from .models import Post
-from .forms import EmailPostForm, CommentForm
+from .forms import EmailPostForm, CommentForm, SearchForm
 
 
 class PostListView(ListView):
@@ -91,3 +92,17 @@ def post_share(request, post_id):
     return render(request, 'blog/post_share.html', {'post': post,
                                                     'form': form,
                                                     'sent': sent})
+
+
+def post_search(request):
+    form = SearchForm()
+    cd = None
+    results = None
+    total_results = None
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            cd = form.cleaned_data
+            results = SearchQuerySet().models(Post).filter(content=cd['query']).load_all()
+            total_results = results.count()
+    return render(request, 'blog/search.html', {'form': form, 'cd': cd, 'results': results, 'total_results': total_results})
